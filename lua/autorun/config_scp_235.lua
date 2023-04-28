@@ -28,15 +28,19 @@ SCP_235_CONFIG.RangeEffect = 50
 SCP_235_CONFIG.Disk = {}
 SCP_235_CONFIG.Disk[1] = {}
 SCP_235_CONFIG.Disk[1].SoundToPlay = SCP_235_CONFIG.FolderSounds .. "SCP-235-1.wav"
+SCP_235_CONFIG.Disk[1][1] = {}
 SCP_235_CONFIG.Disk[1][1].StopSoundDisk = 10
 SCP_235_CONFIG.Disk[1][1].ResumeSoundDisk = 3
+SCP_235_CONFIG.Disk[1][2] = {}
 SCP_235_CONFIG.Disk[1][2].StopSoundDisk = 20
 SCP_235_CONFIG.Disk[1][2].ResumeSoundDisk = 4
 
 -- SCP-235-2
 SCP_235_CONFIG.Disk[2] = {}
+SCP_235_CONFIG.Disk[2][1] = {}
 SCP_235_CONFIG.Disk[2][1].StopSoundDisk = 20
 SCP_235_CONFIG.Disk[2][1].ResumeSoundDisk = 5
+SCP_235_CONFIG.Disk[2][2] = {}
 SCP_235_CONFIG.Disk[2][2].StopSoundDisk = 42
 SCP_235_CONFIG.Disk[2][2].ResumeSoundDisk = 2
 

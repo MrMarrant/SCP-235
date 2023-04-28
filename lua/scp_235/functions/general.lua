@@ -21,8 +21,9 @@ if (SERVER) then
     */
     function SCP_235.SetEntityUnFreeze(Entity)
         if (Entity:IsPlayer()) then
-            Entity:Freeze(false)
+            --Entity:Freeze(false)
         else --TODO : UnFreeze les autres entités.
+            Entity:RemoveFlags( FL_FROZEN )
         end
     end
 
@@ -32,8 +33,9 @@ if (SERVER) then
     */
     function SCP_235.SetEntityFreeze(Entity, FreezeDuration)
         if (Entity:IsPlayer()) then
-            Entity:Freeze(true)
+            --Entity:Freeze(true)
         else --TODO : Freeze les autres entités.
+            Entity:AddFlags( FL_FROZEN ) --! Pas l'air de fonctionner
         end
         timer.Simple(FreezeDuration, function()
             if (Entity) then
@@ -49,11 +51,13 @@ if (SERVER) then
     function SCP_235.StopTimeEntity(Origin, Range, FreezeDuration)
         local EntsFound = ents.FindInSphere( Origin, Range )
         for key, value in pairs(EntsFound) do
-            SCP_235.SetEntityFreeze(value, FreezeDuration)
-            if (value:IsPlayer()) then
-                -- TODO : Afficher un texte au centre de l'écran pour donner le contexte qu'il n'ont pas conscience d'être freeze.
-                -- TODO : Rendre flou l'écran.
-                -- TODO : Les empecher de parler avec le micro.
+            if (!value:IsFlagSet( FL_FROZEN )) then
+                SCP_235.SetEntityFreeze(value, FreezeDuration)
+                if (value:IsPlayer()) then
+                    -- TODO : Afficher un texte au centre de l'écran pour donner le contexte qu'il n'ont pas conscience d'être freeze.
+                    -- TODO : Rendre flou l'écran.
+                    -- TODO : Les empecher de parler avec le micro.
+                end
             end
         end
     end

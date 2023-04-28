@@ -19,7 +19,7 @@ include("shared.lua")
 
 function ENT:Initialize()
 	self.TypeSCP235 = 1
-	self:SetModel( "models/props_c17/cashregister01a.mdl" )
+	self:SetModel( "models/player/items/humans/top_hat.mdl" )
 	self:RebuildPhysics()
 end
 
@@ -35,17 +35,18 @@ function ENT:RebuildPhysics( )
 	end
 end
 
-function ENT:PhysicsCollide( data, physobj )
+function ENT:PhysicsCollide(data, phys)
+	if data.DeltaTime > 0.2 then
+		if data.Speed > 250 then
+			self:EmitSound("physics/plaster/drywall_impact_hard" .. math.random(1, 3) .. ".wav", 75, math.random(90,110), 0.5)
+		else
+			self:EmitSound("physics/plaster/drywall_impact_soft" .. math.random(1, 3) .. ".wav", 75, math.random(90,110), 0.2)
+		end
+	end
 end
 
 function ENT:OnTakeDamage( dmginfo )
 end
 
 function ENT:Use( ply )
-end
-
-function ENT:Touch( Entity )
-	if (Entity:GetClass("record_player") and !Entity.TypeSoundPlayed) then
-		self:Remove()
-	end
 end
