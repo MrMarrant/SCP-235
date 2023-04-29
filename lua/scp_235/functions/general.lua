@@ -16,26 +16,27 @@
 
 if (SERVER) then
     /*
-    * 
+    * UnFreeze all entities.
     * @Entity The ent to unfreeze.
     */
     function SCP_235.SetEntityUnFreeze(Entity)
         if (Entity:IsPlayer()) then
-            --Entity:Freeze(false)
-        else --TODO : UnFreeze les autres entités.
-            Entity:RemoveFlags( FL_FROZEN )
+            Entity:Freeze(false)
+        else
+            Entity:SetMoveType(Entity.PreviousType)
         end
     end
 
     /*
-    * 
+    * Freeze all entities
     * @Entity The ent to freeze.
     */
     function SCP_235.SetEntityFreeze(Entity, FreezeDuration)
         if (Entity:IsPlayer()) then
-            --Entity:Freeze(true)
-        else --TODO : Freeze les autres entités.
-            Entity:AddFlags( FL_FROZEN ) --! Pas l'air de fonctionner
+            Entity:Freeze(true)
+        else
+            Entity.PreviousType = Entity:GetMoveType()
+            Entity:SetMoveType(MOVETYPE_NONE)
         end
         timer.Simple(FreezeDuration, function()
             if (Entity) then
