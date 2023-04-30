@@ -30,8 +30,8 @@ function ENT:Initialize()
 	self.IsCDInserted = false -- Permet d'indiquer si un CD est inséré.
 	self.TypeSoundPlayed = nil -- Permet d'indiquer quel type de CD à été inséré.
 	self.SoundIsStop = false -- Permet de savoir si le son est stopé.
-	self.SoundStopDuration = nil -- Permet de savoir pendant cb de temps le son est stop.
 	self.KeyIdentifierStop = nil -- Permet de savoir quel est le stop actuel.
+	self.EntitiesFreeze = {}
 	self.NextUse = CurTime()
 	self.UseCoolDown = 1.5
 	self:SetModel( "models/props_c17/cashregister01a.mdl" )
@@ -41,6 +41,8 @@ end
 function ENT:GenerateID()
 	local OthersRecordPlayer = ents.FindByClass( "record_player" )
 	local MaxID = 0
+	local KeySelfEnt = table.KeyFromValue( OthersRecordPlayer, self )
+	table.remove( OthersRecordPlayer, KeySelfEnt )
 	if (!table.IsEmpty( OthersRecordPlayer)) then
 		for key, value in ipairs(OthersRecordPlayer) do
 			if (MaxID > value.IDSCP235) then
@@ -88,9 +90,11 @@ end
 function ENT:Think()
 	if (self.SoundIsStop and SERVER) then
 		--? On stop les joueurs selon la durée totale de l'effet soustrait par le nombres de secondes que l'enregistrement à déjà stop.
-		SCP_235.StopTimeEntity(self:GetPos(), SCP_235_CONFIG.RangeEffect, self.SoundStopDuration - self:GetCountDurationStop())
+		SCP_235.StopTimeEntity(self, SCP_235_CONFIG.RangeEffect, self:GetCountDurationStop())
 	end
 end
+
+-- TODO : OnRemove
 
 function ENT:InsertDisk(Entity)
 	self.IsCDInserted = true
@@ -107,9 +111,12 @@ function ENT:EjectDisk()
 	Disk:Activate()
 	self:ManageSound()
 	self:StopEveryTimerCreated()
+	for key, value in ipairs(self.EntitiesFreeze) do
+		SCP_235.SetEntityUnFreeze(value, self)
+	end
+	self.EntitiesFreeze = {}
 	self.TypeSoundPlayed = nil
 	self.SoundIsStop = false
-	self.SoundStopDuration = nil
 	self.KeyIdentifierStop = nil
 	timer.Simple(1, function() --? Permet d'éviter que le disque jeté soit inséré lors de la colision.
 		if (self:IsValid()) then self.IsCDInserted = false end
@@ -129,23 +136,22 @@ end
 
 function ENT:SetStopSound()
 	for key, value in ipairs(SCP_235_CONFIG.Disk[self.TypeSoundPlayed]) do
-		timer.Create( "SCP-235-Stop-"..self.IDSCP235.."-"....self.TypeSoundPlayed.."-"..key, value.StopSoundDisk, 1, function()
-			self.SoundIsStop = true
-			self.SoundStopDuration = value.ResumeSoundDisk
+		timer.Create( "SCP-235-Stop-"..self.IDSCP235.."-"..self.TypeSoundPlayed.."-"..key, value.StopSoundDisk, 1, function()
+			if (!self:IsValid()) then return end
 			self.KeyIdentifierStop = key
-			timer.Create( "SCP-235-Resume-"..self.IDSCP235.."-"....self.TypeSoundPlayed.."-"..key, value.ResumeSoundDisk, 1, function()
+			self.SoundIsStop = true
+			timer.Create( "SCP-235-Resume-"..self.IDSCP235.."-"..self.TypeSoundPlayed.."-"..key, value.ResumeSoundDisk, 1, function()
+				if (!self:IsValid()) then return end
 				self.SoundIsStop = false
-				self.SoundStopDuration = nil
 			end )
 		end )
 	end
 end
 
 function ENT:GetCountDurationStop()
-	return timer.TimeLeft( "SCP-235-Resume-"..self.TypeSoundPlayed..self.KeyIdentifierStop )
+	return timer.TimeLeft( "SCP-235-Resume-"..self.IDSCP235.."-"..self.TypeSoundPlayed.."-"..self.KeyIdentifierStop )
 end
 
---! Comment gérer les timers des joueurs qui vont être unfreeze ?
 function ENT:StopEveryTimerCreated()
 	for key, value in ipairs(SCP_235_CONFIG.Disk[self.TypeSoundPlayed]) do
 		if (timer.Exists( "SCP-235-Stop-"..self.IDSCP235.."-"..self.TypeSoundPlayed.."-"..key)) then

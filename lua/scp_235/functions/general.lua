@@ -19,11 +19,20 @@ if (SERVER) then
     * UnFreeze all entities.
     * @Entity The ent to unfreeze.
     */
-    function SCP_235.SetEntityUnFreeze(Entity)
+    function SCP_235.SetEntityUnFreeze(Entity, RecordPlayer)
+        table.RemoveByValue( RecordPlayer.EntitiesFreeze, Entity )
+        if (!Entity:IsValid()) then return end
         if (Entity:IsPlayer()) then
             Entity:Freeze(false)
         else
             Entity:SetMoveType(Entity.PreviousType)
+            Entity:RemoveFlags(FL_FROZEN)
+            local EntPhys = Entity:GetPhysicsObject()
+            -- TODO : Gérer les objets volant qui bougeaient pas au moment du freeze.
+            if (EntPhys:IsValid()) then
+                print(Entity)
+                print(EntPhys:GetVelocity())
+            end
         end
     end
 
@@ -31,16 +40,18 @@ if (SERVER) then
     * Freeze all entities
     * @Entity The ent to freeze.
     */
-    function SCP_235.SetEntityFreeze(Entity, FreezeDuration)
+    function SCP_235.SetEntityFreeze(Entity, FreezeDuration, RecordPlayer)
+        table.insert(RecordPlayer.EntitiesFreeze, Entity)
         if (Entity:IsPlayer()) then
             Entity:Freeze(true)
         else
             Entity.PreviousType = Entity:GetMoveType()
             Entity:SetMoveType(MOVETYPE_NONE)
+            Entity:AddFlags(FL_FROZEN)
         end
         timer.Simple(FreezeDuration, function()
             if (Entity) then
-                SCP_235.SetEntityUnFreeze(Entity)
+                SCP_235.SetEntityUnFreeze(Entity, RecordPlayer)
             end
         end)
     end
@@ -49,11 +60,11 @@ if (SERVER) then
     * 
     * @Vector Le vecteur d'origine ou il faut chercher
     */
-    function SCP_235.StopTimeEntity(Origin, Range, FreezeDuration)
-        local EntsFound = ents.FindInSphere( Origin, Range )
+    function SCP_235.StopTimeEntity(RecordPlayer, Range, FreezeDuration)
+        local EntsFound = ents.FindInSphere( RecordPlayer:GetPos(), Range )
         for key, value in pairs(EntsFound) do
             if (!value:IsFlagSet( FL_FROZEN )) then
-                SCP_235.SetEntityFreeze(value, FreezeDuration)
+                SCP_235.SetEntityFreeze(value, FreezeDuration, RecordPlayer)
                 if (value:IsPlayer()) then
                     -- TODO : Afficher un texte au centre de l'écran pour donner le contexte qu'il n'ont pas conscience d'être freeze.
                     -- TODO : Rendre flou l'écran.

@@ -31,10 +31,10 @@ SCP_235_CONFIG.SoundToPlay[1] = SCP_235_CONFIG.FolderSounds .. "SCP-235-1.wav"
 
 SCP_235_CONFIG.Disk[1] = {}
 SCP_235_CONFIG.Disk[1][1] = {}
-SCP_235_CONFIG.Disk[1][1].StopSoundDisk = 10
+SCP_235_CONFIG.Disk[1][1].StopSoundDisk = 3
 SCP_235_CONFIG.Disk[1][1].ResumeSoundDisk = 3
 SCP_235_CONFIG.Disk[1][2] = {}
-SCP_235_CONFIG.Disk[1][2].StopSoundDisk = 20
+SCP_235_CONFIG.Disk[1][2].StopSoundDisk = 10
 SCP_235_CONFIG.Disk[1][2].ResumeSoundDisk = 4
 
 -- SCP-235-2
