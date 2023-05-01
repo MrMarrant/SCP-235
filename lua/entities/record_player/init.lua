@@ -94,7 +94,9 @@ function ENT:Think()
 	end
 end
 
--- TODO : OnRemove
+function ENT:OnRemove()
+	self:EjectDisk()
+end
 
 function ENT:InsertDisk(Entity)
 	self.IsCDInserted = true

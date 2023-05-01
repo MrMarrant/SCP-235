@@ -15,6 +15,15 @@
 -- along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 if (SERVER) then
+
+    /*
+    *
+    */
+    function SCP_235.FreezeEffectPlayer(Ply, FreezeDuration)
+        net.Start(SCP_235_CONFIG.FreezeEffectPlayer)
+            net.WriteInt(FreezeDuration, 6)
+        net.Send(Ply)
+    end
     /*
     * UnFreeze all entities.
     * @Entity The ent to unfreeze.
@@ -66,6 +75,7 @@ if (SERVER) then
             if (!value:IsFlagSet( FL_FROZEN )) then
                 SCP_235.SetEntityFreeze(value, FreezeDuration, RecordPlayer)
                 if (value:IsPlayer()) then
+                    SCP_235.FreezeEffectPlayer(value, FreezeDuration)
                     -- TODO : Afficher un texte au centre de l'écran pour donner le contexte qu'il n'ont pas conscience d'être freeze.
                     -- TODO : Rendre flou l'écran.
                     -- TODO : Les empecher de parler avec le micro.
@@ -73,4 +83,11 @@ if (SERVER) then
             end
         end
     end
+end
+
+if (CLIENT) then
+    net.Receive(SCP_235_CONFIG.FreezeEffectPlayer, function(Len, Ply)
+        local FreezeDuration = net.ReadInt(6)
+
+    end)
 end

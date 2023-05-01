@@ -48,7 +48,11 @@ SCP_235_CONFIG.Disk[2][2] = {}
 SCP_235_CONFIG.Disk[2][2].StopSoundDisk = 42
 SCP_235_CONFIG.Disk[2][2].ResumeSoundDisk = 2
 
+-- Network Value
+SCP_235_CONFIG.FreezeEffectPlayer = "SCP_235_CONFIG.FreezeEffectPlayer"
+
 if (SERVER) then
+    util.AddNetworkString( SCP_235_CONFIG.FreezeEffectPlayer )
 end
 
 /*
