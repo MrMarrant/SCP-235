@@ -163,6 +163,11 @@ function ENT:StopEveryTimerCreated()
 			timer.Remove( "SCP-235-Resume-"..self.IDSCP235.."-"..self.TypeSoundPlayed.."-"..key )
 		end
 	end
+	for key, value in ipairs(self.EntitiesFreeze) do
+		if (value:IsPlayer()) then
+			SCP_235.UnFreezeEffectPlayer(value)
+		end
+	end
 end
 
 --TODO : Faire des events qui font que si un joueur freeze est touché ou autre, alors ça le defreeze ?

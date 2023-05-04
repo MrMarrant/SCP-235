@@ -17,16 +17,29 @@
 if (SERVER) then
 
     /*
-    *
+    * Send a net message to client to display the freeze effect.
+    * @Player Ply The player to display the freeze effect.
+    * @number FreezeDuration The duration of the effect.
     */
     function SCP_235.FreezeEffectPlayer(Ply, FreezeDuration)
         net.Start(SCP_235_CONFIG.FreezeEffectPlayer)
-            net.WriteInt(FreezeDuration, 6)
+            net.WriteUInt(FreezeDuration, 6)
         net.Send(Ply)
     end
+
+    /*
+    * Send a net message to client to remove the freeze effect clientside.
+    * @Player Ply The player to display the freeze effect.
+    */
+    function SCP_235.UnFreezeEffectPlayer(Ply)
+        net.Start(SCP_235_CONFIG.UnFreezeEffectPlayer)
+        net.Send(Ply)
+    end
+
     /*
     * UnFreeze all entities.
-    * @Entity The ent to unfreeze.
+    * @Entity Entity The ent to unfreeze.
+    * @Entity RecordPlayer The RecordPlayer ent who call the method.
     */
     function SCP_235.SetEntityUnFreeze(Entity, RecordPlayer)
         table.RemoveByValue( RecordPlayer.EntitiesFreeze, Entity )
@@ -47,7 +60,9 @@ if (SERVER) then
 
     /*
     * Freeze all entities
-    * @Entity The ent to freeze.
+    * @Entity Entity The ent to freeze.
+    * @number FreezeDuration The duration of the effect.
+    * @Entity RecordPlayer The RecordPlayer ent who call the method.
     */
     function SCP_235.SetEntityFreeze(Entity, FreezeDuration, RecordPlayer)
         table.insert(RecordPlayer.EntitiesFreeze, Entity)
@@ -66,8 +81,9 @@ if (SERVER) then
     end
 
     /*
-    * 
-    * @Vector Le vecteur d'origine ou il faut chercher
+    * @Entity RecordPlayer The RecordPlayer ent who call the method.
+    * @number Range The range of the effect.
+    * @number FreezeDuration The duration of the effect.
     */
     function SCP_235.StopTimeEntity(RecordPlayer, Range, FreezeDuration)
         local EntsFound = ents.FindInSphere( RecordPlayer:GetPos(), Range )
@@ -86,8 +102,48 @@ if (SERVER) then
 end
 
 if (CLIENT) then
-    net.Receive(SCP_235_CONFIG.FreezeEffectPlayer, function(Len, Ply)
-        local FreezeDuration = net.ReadInt(6)
 
+    /*
+    * Display a blur effect on player that are freeze.
+    */
+    function SCP_235.BlurryEffect()
+        local Ply = LocalPlayer()
+        local CurentTime = FrameTime()
+        local AddAlpha = 1
+        local DrawAlpha = 10
+        local Delay = 1
+            
+        if Ply.SCP235_IsFreeze then 
+            AddAlpha = 0.2
+            DrawAlpha = 0.99
+            Delay = 0.05
+        else
+            AddAlpha = math.Clamp(ply.AddAlpha + CurentTime * 0.4, 0.2, 1)
+            DrawAlpha = math.Clamp(ply.DrawAlpha - CurentTime * 0.4, 0, 0.99)
+            Delay = math.Clamp(ply.Delay - CurentTime * 0.4, 0, 0.05)
+        end
+        
+        DrawMotionBlur( AddAlpha, DrawAlpha, Delay )
+    end
+
+    net.Receive(SCP_235_CONFIG.FreezeEffectPlayer, function(Len)
+        local FreezeDuration = net.ReadUInt(6)
+        local Ply = LocalPlayer()
+        Ply.SCP235_IsFreeze = true
+        timer.Create("SCP_235.BlurryEffect_"..Ply::EntIndex(), FreezeDuration, 1, function()
+            if (IsValid(Ply)) then
+                Ply.SCP235_IsFreeze = nil
+            end
+        end)
     end)
+
+    net.Receive(SCP_235_CONFIG.UnFreezeEffectPlayer, function(Len)
+        local Ply = LocalPlayer()
+        Ply.SCP235_IsFreeze = nil
+        if (timer.Exists("SCP_235.BlurryEffect_"..Ply::EntIndex())) then
+            timer.Remove("SCP_235.BlurryEffect_"..Ply::EntIndex())
+        end
+    end)
+
+    hook.Add("RenderScreenspaceEffects","RenderScreenspaceEffects.SCP35_BlurryEffect",SCP_235.BlurryEffect)
 end
