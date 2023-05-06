@@ -31,9 +31,19 @@ SCP_235_CONFIG.Disk[2][2].ResumeSoundDisk = 2
 
 -- Network Value
 SCP_235_CONFIG.FreezeEffectPlayer = "SCP_235_CONFIG.FreezeEffectPlayer"
-SCP_235_CONFIG.FreezeEffectPlayer = "SCP_235_CONFIG.UnFreezeEffectPlayer"
+SCP_235_CONFIG.UnFreezeEffectPlayer = "SCP_235_CONFIG.UnFreezeEffectPlayer"
 
 if (SERVER) then
     util.AddNetworkString( SCP_235_CONFIG.FreezeEffectPlayer )
     util.AddNetworkString( SCP_235_CONFIG.UnFreezeEffectPlayer )
+end
+
+if (CLIENT) then
+    SCP_235_CONFIG.ScrW = ScrW()
+    SCP_235_CONFIG.ScrH = ScrH()
+    surface.CreateFont( "SCP235_FreezeFont", {
+        font = "Arial",
+        size = 35,
+        weight = 1000
+    } )
 end

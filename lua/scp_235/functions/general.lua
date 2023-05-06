@@ -22,8 +22,9 @@ if (SERVER) then
     * @number FreezeDuration The duration of the effect.
     */
     function SCP_235.FreezeEffectPlayer(Ply, FreezeDuration)
+        Ply.SCP235_IsFreeze = true
         net.Start(SCP_235_CONFIG.FreezeEffectPlayer)
-            net.WriteUInt(FreezeDuration, 6)
+            net.WriteFloat(FreezeDuration)
         net.Send(Ply)
     end
 
@@ -32,6 +33,7 @@ if (SERVER) then
     * @Player Ply The player to display the freeze effect.
     */
     function SCP_235.UnFreezeEffectPlayer(Ply)
+        Ply.SCP235_IsFreeze = nil
         net.Start(SCP_235_CONFIG.UnFreezeEffectPlayer)
         net.Send(Ply)
     end
@@ -92,13 +94,15 @@ if (SERVER) then
                 SCP_235.SetEntityFreeze(value, FreezeDuration, RecordPlayer)
                 if (value:IsPlayer()) then
                     SCP_235.FreezeEffectPlayer(value, FreezeDuration)
-                    -- TODO : Afficher un texte au centre de l'écran pour donner le contexte qu'il n'ont pas conscience d'être freeze.
-                    -- TODO : Rendre flou l'écran.
-                    -- TODO : Les empecher de parler avec le micro.
                 end
             end
         end
     end
+
+    -- Players freeze can't hear others players and can't be heard by others.
+    hook.Add( "PlayerCanHearPlayersVoice", "PlayerCanHearPlayersVoice.SCP235_TimeIsStop", function( Listener, Talker )
+        if Listener.SCP235_IsFreeze or Talker.SCP235_IsFreeze then return false end
+    end )
 end
 
 if (CLIENT) then
@@ -107,30 +111,16 @@ if (CLIENT) then
     * Display a blur effect on player that are freeze.
     */
     function SCP_235.BlurryEffect()
-        local Ply = LocalPlayer()
-        local CurentTime = FrameTime()
-        local AddAlpha = 1
-        local DrawAlpha = 10
-        local Delay = 1
-            
-        if Ply.SCP235_IsFreeze then 
-            AddAlpha = 0.2
-            DrawAlpha = 0.99
-            Delay = 0.05
-        else
-            AddAlpha = math.Clamp(ply.AddAlpha + CurentTime * 0.4, 0.2, 1)
-            DrawAlpha = math.Clamp(ply.DrawAlpha - CurentTime * 0.4, 0, 0.99)
-            Delay = math.Clamp(ply.Delay - CurentTime * 0.4, 0, 0.05)
+        if (LocalPlayer().SCP235_IsFreeze) then
+            DrawMaterialOverlay("effects/strider_pinch_dudv", 0.3)
         end
-        
-        DrawMotionBlur( AddAlpha, DrawAlpha, Delay )
     end
 
     net.Receive(SCP_235_CONFIG.FreezeEffectPlayer, function(Len)
-        local FreezeDuration = net.ReadUInt(6)
+        local FreezeDuration = net.ReadFloat()
         local Ply = LocalPlayer()
         Ply.SCP235_IsFreeze = true
-        timer.Create("SCP_235.BlurryEffect_"..Ply::EntIndex(), FreezeDuration, 1, function()
+        timer.Create("SCP_235.BlurryEffect_"..Ply:EntIndex(), FreezeDuration, 1, function()
             if (IsValid(Ply)) then
                 Ply.SCP235_IsFreeze = nil
             end
@@ -140,10 +130,21 @@ if (CLIENT) then
     net.Receive(SCP_235_CONFIG.UnFreezeEffectPlayer, function(Len)
         local Ply = LocalPlayer()
         Ply.SCP235_IsFreeze = nil
-        if (timer.Exists("SCP_235.BlurryEffect_"..Ply::EntIndex())) then
-            timer.Remove("SCP_235.BlurryEffect_"..Ply::EntIndex())
+        if (timer.Exists("SCP_235.BlurryEffect_"..Ply:EntIndex())) then
+            timer.Remove("SCP_235.BlurryEffect_"..Ply:EntIndex())
         end
     end)
+
+    hook.Add( "HUDPaint", "HUDPaint.SCP35_BlurryEffect", function()
+        if (LocalPlayer().SCP235_IsFreeze) then 
+            draw.DrawText( "You are frozen in time, you are not conscious that time has stopped", "SCP235_FreezeFont", SCP_235_CONFIG.ScrW * 0.5, SCP_235_CONFIG.ScrH * 0.5, Color(180,180,180,150), TEXT_ALIGN_CENTER )
+        end
+    end )
+
+    hook.Add( "OnScreenSizeChanged", "OnScreenSizeChanged.SCP35_ScreenSizeChanged", function( oldWidth, oldHeight )
+        SCP_235_CONFIG.ScrW = ScrW()
+        SCP_235_CONFIG.ScrH = ScrH()
+    end )
 
     hook.Add("RenderScreenspaceEffects","RenderScreenspaceEffects.SCP35_BlurryEffect",SCP_235.BlurryEffect)
 end
