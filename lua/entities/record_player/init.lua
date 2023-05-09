@@ -34,7 +34,7 @@ function ENT:Initialize()
 	self.EntitiesFreeze = {}
 	self.NextUse = CurTime()
 	self.UseCoolDown = 1.5
-	self:SetModel( "models/props_c17/cashregister01a.mdl" )
+	self:SetModel( "models/record_player/record_player.mdl" )
 	self:RebuildPhysics()
 end
 
@@ -103,12 +103,18 @@ end
 function ENT:InsertDisk(Entity)
 	self.IsCDInserted = true
 	self.TypeSoundPlayed = Entity.TypeSCP235
+	self:SetBodygroup( 1, 1 )
+	self:ResetSequence( "vinyl_play" )
+
 	Entity:Remove()
 	self:ManageSound()
 	self:SetStopSound()
 end
 
 function ENT:EjectDisk()
+	self:SetBodygroup( 0, 0 )
+	self:ResetSequence( "idle" )
+
 	local Disk = ents.Create( "scp_235_" .. self.TypeSoundPlayed )
 	Disk:SetPos( self:GetPos())
 	Disk:Spawn()

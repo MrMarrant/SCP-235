@@ -139,6 +139,7 @@ if (CLIENT) then
         if (LocalPlayer().SCP235_IsFreeze) then 
             draw.DrawText( "You are frozen in time, you are not conscious that time has stopped", "SCP235_FreezeFont", SCP_235_CONFIG.ScrW * 0.5, SCP_235_CONFIG.ScrH * 0.5, Color(180,180,180,150), TEXT_ALIGN_CENTER )
         end
+        --RunConsoleCommand( "stopsound" )
     end )
 
     hook.Add( "OnScreenSizeChanged", "OnScreenSizeChanged.SCP35_ScreenSizeChanged", function( oldWidth, oldHeight )

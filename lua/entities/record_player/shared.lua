@@ -21,3 +21,4 @@ ENT.Author = "MrMarrant"
 ENT.PrintName = "Record Player"
 ENT.Spawnable = true
 ENT.Category = "SCP"
+ENT.AutomaticFrameAdvance = true -- Set for enable the fucking animation, why is it random documented on Think method for fuck sake.

@@ -19,7 +19,7 @@ include("shared.lua")
 
 function ENT:Initialize()
 	self.TypeSCP235 = 1
-	self:SetModel( "models/player/items/humans/top_hat.mdl" )
+	self:SetModel( "models/scp_235/scp_235_1.mdl" )
 	self:RebuildPhysics()
 end
 
