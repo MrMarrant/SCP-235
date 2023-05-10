@@ -11,17 +11,17 @@ SCP_235_CONFIG.SoundToPlay = {}
 -- TODO
 SCP_235_CONFIG.Disk[1] = {}
 SCP_235_CONFIG.Disk[1][1] = {}
-SCP_235_CONFIG.Disk[1][1].StopSoundDisk = 3
-SCP_235_CONFIG.Disk[1][1].ResumeSoundDisk = 3
+SCP_235_CONFIG.Disk[1][1].StopSoundDisk = 18
+SCP_235_CONFIG.Disk[1][1].ResumeSoundDisk = 5
 SCP_235_CONFIG.Disk[1][2] = {}
-SCP_235_CONFIG.Disk[1][2].StopSoundDisk = 10
-SCP_235_CONFIG.Disk[1][2].ResumeSoundDisk = 4
+SCP_235_CONFIG.Disk[1][2].StopSoundDisk = 55
+SCP_235_CONFIG.Disk[1][2].ResumeSoundDisk = 22
 SCP_235_CONFIG.Disk[1][3] = {}
-SCP_235_CONFIG.Disk[1][3].StopSoundDisk = 10
-SCP_235_CONFIG.Disk[1][3].ResumeSoundDisk = 4
+SCP_235_CONFIG.Disk[1][3].StopSoundDisk = 134
+SCP_235_CONFIG.Disk[1][3].ResumeSoundDisk = 12
 SCP_235_CONFIG.Disk[1][4] = {}
-SCP_235_CONFIG.Disk[1][4].StopSoundDisk = 10
-SCP_235_CONFIG.Disk[1][4].ResumeSoundDisk = 4
+SCP_235_CONFIG.Disk[1][4].StopSoundDisk = 148
+SCP_235_CONFIG.Disk[1][4].ResumeSoundDisk = 8
 
 -- SCP-235-2
 -- TODO
