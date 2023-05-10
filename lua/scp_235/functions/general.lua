@@ -49,13 +49,13 @@ if (SERVER) then
         if (Entity:IsPlayer()) then
             Entity:Freeze(false)
         else
-            Entity:SetMoveType(Entity.PreviousType)
+            Entity:SetMoveType(Entity.SCP235_PreviousType)
             Entity:RemoveFlags(FL_FROZEN)
             local EntPhys = Entity:GetPhysicsObject()
             -- TODO : Gérer les objets volant qui bougeaient pas au moment du freeze.
             if (EntPhys:IsValid()) then
-                print(Entity)
-                print(EntPhys:GetVelocity())
+                -- print(Entity)
+                -- print(EntPhys:GetVelocity())
             end
         end
     end
@@ -71,7 +71,7 @@ if (SERVER) then
         if (Entity:IsPlayer()) then
             Entity:Freeze(true)
         else
-            Entity.PreviousType = Entity:GetMoveType()
+            Entity.SCP235_PreviousType = Entity:GetMoveType()
             Entity:SetMoveType(MOVETYPE_NONE)
             Entity:AddFlags(FL_FROZEN)
         end
@@ -90,7 +90,7 @@ if (SERVER) then
     function SCP_235.StopTimeEntity(RecordPlayer, Range, FreezeDuration)
         local EntsFound = ents.FindInSphere( RecordPlayer:GetPos(), Range )
         for key, value in pairs(EntsFound) do
-            if (!value:IsFlagSet( FL_FROZEN )) then
+            if (!value:IsFlagSet( FL_FROZEN ) or value:IsFlagSet( FL_FROZEN ) == nil) then -- For what ever reason, sometimes, IsFlagSet return nil for somes entities.
                 SCP_235.SetEntityFreeze(value, FreezeDuration, RecordPlayer)
                 if (value:IsPlayer()) then
                     SCP_235.FreezeEffectPlayer(value, FreezeDuration)
