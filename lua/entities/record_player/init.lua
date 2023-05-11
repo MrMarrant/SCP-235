@@ -75,7 +75,7 @@ end
 
 -- Si un joueur essaye de retirer le disque durant un gel, il ne se passera rien.
 function ENT:Use( ply )
-	if CurTime() < self.NextUse or self:IsFlagSet( FL_FROZEN ) then return end
+	if CurTime() < self.NextUse or self.SCP235_IsFreeze then return end
 	self.NextUse = CurTime() + self.UseCoolDown
 	if (self.IsCDInserted) then self:EjectDisk() end
 end

@@ -22,7 +22,6 @@ if (SERVER) then
     * @number FreezeDuration The duration of the effect.
     */
     function SCP_235.FreezeEffectPlayer(Ply, FreezeDuration)
-        Ply.SCP235_IsFreeze = true
         net.Start(SCP_235_CONFIG.FreezeEffectPlayer)
             net.WriteFloat(FreezeDuration)
         net.Send(Ply)
@@ -33,7 +32,6 @@ if (SERVER) then
     * @Player Ply The player to display the freeze effect.
     */
     function SCP_235.UnFreezeEffectPlayer(Ply)
-        Ply.SCP235_IsFreeze = nil
         net.Start(SCP_235_CONFIG.UnFreezeEffectPlayer)
         net.Send(Ply)
     end
@@ -46,6 +44,7 @@ if (SERVER) then
     function SCP_235.SetEntityUnFreeze(Entity, RecordPlayer)
         table.RemoveByValue( RecordPlayer.EntitiesFreeze, Entity )
         if (!Entity:IsValid()) then return end
+        Entity.SCP235_IsFreeze = nil
         if (Entity:IsPlayer()) then
             Entity:Freeze(false)
         else
@@ -68,6 +67,7 @@ if (SERVER) then
     */
     function SCP_235.SetEntityFreeze(Entity, FreezeDuration, RecordPlayer)
         table.insert(RecordPlayer.EntitiesFreeze, Entity)
+        Entity.SCP235_IsFreeze = true
         if (Entity:IsPlayer()) then
             Entity:Freeze(true)
         else
@@ -75,7 +75,7 @@ if (SERVER) then
             Entity:SetMoveType(MOVETYPE_NONE)
             Entity:AddFlags(FL_FROZEN)
         end
-        timer.Simple(FreezeDuration, function()
+        timer.Create("SCP_235.FreezeEffect_"..Ply:EntIndex(), FreezeDuration, 1, function()
             if (Entity) then
                 SCP_235.SetEntityUnFreeze(Entity, RecordPlayer)
             end
@@ -90,7 +90,7 @@ if (SERVER) then
     function SCP_235.StopTimeEntity(RecordPlayer, Range, FreezeDuration)
         local EntsFound = ents.FindInSphere( RecordPlayer:GetPos(), Range )
         for key, value in pairs(EntsFound) do
-            if (!value:IsFlagSet( FL_FROZEN ) or value:IsFlagSet( FL_FROZEN ) == nil) then -- For what ever reason, sometimes, IsFlagSet return nil for somes entities.
+            if (!value:IsFlagSet( FL_FROZEN ) or !value.SCP235_IsFreeze) then
                 SCP_235.SetEntityFreeze(value, FreezeDuration, RecordPlayer)
                 if (value:IsPlayer()) then
                     SCP_235.FreezeEffectPlayer(value, FreezeDuration)
@@ -102,6 +102,31 @@ if (SERVER) then
     -- Players freeze can't hear others players and can't be heard by others.
     hook.Add( "PlayerCanHearPlayersVoice", "PlayerCanHearPlayersVoice.SCP235_TimeIsStop", function( Listener, Talker )
         if Listener.SCP235_IsFreeze or Talker.SCP235_IsFreeze then return false end
+    end )
+
+    -- TODO : Possible que les entités freeze ne recoivent pas de dégats.
+    -- Remove freeze effect to entity or player when something hit them.
+    hook.Add( "EntityTakeDamage", "EntityTakeDamage.UnfreezeEntitiesFreeze", function( target, dmginfo )
+        if (target.SCP235_IsFreeze and target:GetClass() != "record_player") then
+            timer.Adjust( "SCP_235.FreezeEffect_"..target:EntIndex(), 0, 1, nil ) end
+            if (target:IsPlayer()) then
+                SCP_235.UnFreezeEffectPlayer(target)
+            end
+        end
+    end )
+
+    -- Remove freeze effect to entity or player when something touch them that is not freeze.
+    hook.Add( "ShouldCollide", "ShouldCollide.UnfreezeEntitiesFreeze", function( ent1, ent2 )
+        if (ent1:GetClass() != "record_player" and 
+        ent2:GetClass() != "record_player" and 
+        (ent1.SCP235_IsFreeze and !ent2.SCP235_IsFreeze) or 
+        (!ent1.SCP235_IsFreeze and ent2.SCP235_IsFreeze)) then
+            local EntityFreeze = ent1.SCP235_IsFreeze and ent1 or ent2
+            timer.Adjust( "SCP_235.FreezeEffect_"..EntityFreeze:EntIndex(), 0, 1, nil )
+            if (EntityFreeze:IsPlayer()) then
+                SCP_235.UnFreezeEffectPlayer(EntityFreeze)
+            end
+        end
     end )
 end
 
