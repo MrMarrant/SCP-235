@@ -145,6 +145,7 @@ if (CLIENT) then
         local FreezeDuration = net.ReadFloat()
         local Ply = LocalPlayer()
         Ply.SCP235_IsFreeze = true
+        Ply:ChatPrint( "You are frozen in time, you are not conscious that time has stopped" )
         timer.Create("SCP_235.BlurryEffect_"..Ply:EntIndex(), FreezeDuration, 1, function()
             if (IsValid(Ply)) then
                 Ply.SCP235_IsFreeze = nil
@@ -160,12 +161,13 @@ if (CLIENT) then
         end
     end)
 
-    hook.Add( "HUDPaint", "HUDPaint.SCP35_BlurryEffect", function()
+-- Context message when players are froozen in time moove into chatprint.
+--[[     hook.Add( "HUDPaint", "HUDPaint.SCP35_BlurryEffect", function()
         if (LocalPlayer().SCP235_IsFreeze) then 
             draw.DrawText( "You are frozen in time, you are not conscious that time has stopped", "SCP235_FreezeFont", SCP_235_CONFIG.ScrW * 0.5, SCP_235_CONFIG.ScrH * 0.5, Color(180,180,180,150), TEXT_ALIGN_CENTER )
         end
         --RunConsoleCommand( "stopsound" )
-    end )
+    end ) ]]
 
     hook.Add( "OnScreenSizeChanged", "OnScreenSizeChanged.SCP35_ScreenSizeChanged", function( oldWidth, oldHeight )
         SCP_235_CONFIG.ScrW = ScrW()
