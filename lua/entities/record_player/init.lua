@@ -57,10 +57,7 @@ function ENT:RebuildPhysics( )
 	self:SetMoveType(MOVETYPE_VPHYSICS)
 	self:SetSolid( SOLID_VPHYSICS ) 
 	self:SetUseType(SIMPLE_USE)
-	local phys = self:GetPhysicsObject()
-	if (phys:IsValid()) then
-		phys:Wake()
-	end
+	self:PhysWake()
 end
 
 function ENT:PhysicsCollide(data, phys)

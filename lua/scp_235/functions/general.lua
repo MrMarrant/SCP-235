@@ -47,15 +47,12 @@ if (SERVER) then
         Entity.SCP235_IsFreeze = nil
         if (Entity:IsPlayer()) then
             Entity:Freeze(false)
-        else
             Entity:SetMoveType(Entity.SCP235_PreviousType)
-            Entity:RemoveFlags(FL_FROZEN)
-            local EntPhys = Entity:GetPhysicsObject()
-            -- TODO : Gérer les objets volant qui bougeaient pas au moment du freeze.
-            if (EntPhys:IsValid()) then
-                -- print(Entity)
-                -- print(EntPhys:GetVelocity())
-            end
+        end
+        local EntPhys = Entity:GetPhysicsObject()
+        if (EntPhys:IsValid() and Entity.SCP235_PreviousVelocity) then
+            EntPhys:EnableMotion( true )
+            EntPhys:SetVelocity(Entity.SCP235_PreviousVelocity)
         end
     end
 
@@ -67,16 +64,19 @@ if (SERVER) then
     */
     function SCP_235.SetEntityFreeze(Entity, FreezeDuration, RecordPlayer)
         table.insert(RecordPlayer.EntitiesFreeze, Entity)
+        local EntPhys = Entity:GetPhysicsObject()
         Entity.SCP235_IsFreeze = true
+        Entity.SCP235_PreviousType = Entity:GetMoveType()
+        if IsValid(EntPhys) then
+            Entity.SCP235_PreviousVelocity = EntPhys:GetVelocity()
+            EntPhys:EnableMotion( false )
+        end
         if (Entity:IsPlayer()) then
             Entity:Freeze(true)
-        else
-            Entity.SCP235_PreviousType = Entity:GetMoveType()
             Entity:SetMoveType(MOVETYPE_NONE)
-            Entity:AddFlags(FL_FROZEN)
         end
         timer.Create("SCP_235.FreezeEffect_"..Entity:EntIndex(), FreezeDuration, 1, function()
-            if (Entity) then
+            if (IsValid(Entity) and IsValid(RecordPlayer)) then
                 SCP_235.SetEntityUnFreeze(Entity, RecordPlayer)
             end
         end)
@@ -117,8 +117,9 @@ if (SERVER) then
     -- TODO: Pas de collision avec les entités quand elles sont freezes!
     -- Remove freeze effect to entity or player when something touch them that is not freeze.
     hook.Add( "ShouldCollide", "ShouldCollide.UnfreezeEntitiesFreeze", function( ent1, ent2 )
-        if (ent1:GetClass() != "record_player" and 
-        ent2:GetClass() != "record_player" and 
+        print(ent1, ent2)
+        if (ent1:GetClass() != "record_player" and
+        ent2:GetClass() != "record_player" and
         (ent1.SCP235_IsFreeze and !ent2.SCP235_IsFreeze) or 
         (!ent1.SCP235_IsFreeze and ent2.SCP235_IsFreeze)) then
             local EntityFreeze = ent1.SCP235_IsFreeze and ent1 or ent2
