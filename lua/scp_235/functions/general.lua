@@ -14,6 +14,23 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+    -- TODO: Pas de collision avec les entités quand elles sont freezes => Surtout qu'il est pas trigger server side, je comprend r
+
+    -- Remove freeze effect to entity or player when something touch them that is not freeze.
+    hook.Add( "ShouldCollide", "ShouldCollide.UnfreezeEntitiesFreeze", function( ent1, ent2 )
+        print(ent1, ent2)
+        if (ent1:GetClass() != "record_player" and
+        ent2:GetClass() != "record_player" and
+        (ent1.SCP235_IsFreeze and !ent2.SCP235_IsFreeze) or 
+        (!ent1.SCP235_IsFreeze and ent2.SCP235_IsFreeze)) then
+            local EntityFreeze = ent1.SCP235_IsFreeze and ent1 or ent2
+            timer.Adjust( "SCP_235.FreezeEffect_"..EntityFreeze:EntIndex(), 0, 1, nil )
+            if (EntityFreeze:IsPlayer()) then
+                SCP_235.UnFreezeEffectPlayer(EntityFreeze)
+            end
+        end
+    end )
+
 if (SERVER) then
 
     /*
@@ -45,6 +62,7 @@ if (SERVER) then
         table.RemoveByValue( RecordPlayer.EntitiesFreeze, Entity )
         if (!Entity:IsValid()) then return end
         Entity.SCP235_IsFreeze = nil
+        Entity:SetCustomCollisionCheck( false )
         if (Entity:IsPlayer()) then
             Entity:Freeze(false)
             Entity:SetMoveType(Entity.SCP235_PreviousType)
@@ -67,6 +85,7 @@ if (SERVER) then
         local EntPhys = Entity:GetPhysicsObject()
         Entity.SCP235_IsFreeze = true
         Entity.SCP235_PreviousType = Entity:GetMoveType()
+        Entity:SetCustomCollisionCheck( true )
         if IsValid(EntPhys) then
             Entity.SCP235_PreviousVelocity = EntPhys:GetVelocity()
             EntPhys:EnableMotion( false )
@@ -113,22 +132,6 @@ if (SERVER) then
             end
         end
     end )
-
-    -- TODO: Pas de collision avec les entités quand elles sont freezes!
-    -- Remove freeze effect to entity or player when something touch them that is not freeze.
-    hook.Add( "ShouldCollide", "ShouldCollide.UnfreezeEntitiesFreeze", function( ent1, ent2 )
-        print(ent1, ent2)
-        if (ent1:GetClass() != "record_player" and
-        ent2:GetClass() != "record_player" and
-        (ent1.SCP235_IsFreeze and !ent2.SCP235_IsFreeze) or 
-        (!ent1.SCP235_IsFreeze and ent2.SCP235_IsFreeze)) then
-            local EntityFreeze = ent1.SCP235_IsFreeze and ent1 or ent2
-            timer.Adjust( "SCP_235.FreezeEffect_"..EntityFreeze:EntIndex(), 0, 1, nil )
-            if (EntityFreeze:IsPlayer()) then
-                SCP_235.UnFreezeEffectPlayer(EntityFreeze)
-            end
-        end
-    end )
 end
 
 if (CLIENT) then
@@ -161,14 +164,6 @@ if (CLIENT) then
             timer.Remove("SCP_235.BlurryEffect_"..Ply:EntIndex())
         end
     end)
-
--- Context message when players are froozen in time moove into chatprint.
---[[     hook.Add( "HUDPaint", "HUDPaint.SCP35_BlurryEffect", function()
-        if (LocalPlayer().SCP235_IsFreeze) then 
-            draw.DrawText( "You are frozen in time, you are not conscious that time has stopped", "SCP235_FreezeFont", SCP_235_CONFIG.ScrW * 0.5, SCP_235_CONFIG.ScrH * 0.5, Color(180,180,180,150), TEXT_ALIGN_CENTER )
-        end
-        --RunConsoleCommand( "stopsound" )
-    end ) ]]
 
     hook.Add( "OnScreenSizeChanged", "OnScreenSizeChanged.SCP35_ScreenSizeChanged", function( oldWidth, oldHeight )
         SCP_235_CONFIG.ScrW = ScrW()

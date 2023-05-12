@@ -57,6 +57,7 @@ function ENT:RebuildPhysics( )
 	self:SetMoveType(MOVETYPE_VPHYSICS)
 	self:SetSolid( SOLID_VPHYSICS ) 
 	self:SetUseType(SIMPLE_USE)
+	self:SetCustomCollisionCheck( true )
 	self:PhysWake()
 end
 
