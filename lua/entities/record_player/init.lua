@@ -126,11 +126,11 @@ end
 function ENT:ManageSound()
 	if (self.IsSoundPlayed) then
 		self.IsSoundPlayed = false
-		self:StopSound(SCP_235_CONFIG.SoundToPlay..self.TypeSoundPlayed..".wav")
+		self:StopSound(SCP_235_CONFIG.SoundToPlay..self.TypeSoundPlayed..".mp3")
 
 	else
 		self.IsSoundPlayed = true
-		self:EmitSound(SCP_235_CONFIG.SoundToPlay..self.TypeSoundPlayed..".wav")
+		self:EmitSound(SCP_235_CONFIG.SoundToPlay..self.TypeSoundPlayed..".mp3")
 	end
 end
 

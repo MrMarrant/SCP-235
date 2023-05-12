@@ -75,7 +75,7 @@ if (SERVER) then
             Entity:SetMoveType(MOVETYPE_NONE)
             Entity:AddFlags(FL_FROZEN)
         end
-        timer.Create("SCP_235.FreezeEffect_"..Ply:EntIndex(), FreezeDuration, 1, function()
+        timer.Create("SCP_235.FreezeEffect_"..Entity:EntIndex(), FreezeDuration, 1, function()
             if (Entity) then
                 SCP_235.SetEntityUnFreeze(Entity, RecordPlayer)
             end
@@ -104,17 +104,17 @@ if (SERVER) then
         if Listener.SCP235_IsFreeze or Talker.SCP235_IsFreeze then return false end
     end )
 
-    -- TODO : Possible que les entités freeze ne recoivent pas de dégats.
     -- Remove freeze effect to entity or player when something hit them.
     hook.Add( "EntityTakeDamage", "EntityTakeDamage.UnfreezeEntitiesFreeze", function( target, dmginfo )
         if (target.SCP235_IsFreeze and target:GetClass() != "record_player") then
-            timer.Adjust( "SCP_235.FreezeEffect_"..target:EntIndex(), 0, 1, nil ) end
+            timer.Adjust( "SCP_235.FreezeEffect_"..target:EntIndex(), 0, 1, nil )
             if (target:IsPlayer()) then
                 SCP_235.UnFreezeEffectPlayer(target)
             end
         end
     end )
 
+    -- TODO: Pas de collision avec les entités quand elles sont freezes!
     -- Remove freeze effect to entity or player when something touch them that is not freeze.
     hook.Add( "ShouldCollide", "ShouldCollide.UnfreezeEntitiesFreeze", function( ent1, ent2 )
         if (ent1:GetClass() != "record_player" and 

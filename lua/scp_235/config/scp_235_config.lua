@@ -66,11 +66,11 @@ SCP_235_CONFIG.Disk[3][7].ResumeSoundDisk = 4
 -- SCP-235-4
 -- Very lazy to do it 15 times
 SCP_235_CONFIG.Disk[4] = {}
-local StopSoundDisk_4 = 20
-local ResumeSoundDisk_4 = 5
+local StopSoundDisk_4 = 11
+local ResumeSoundDisk_4 = 4
 for i = 1, 15 do
     SCP_235_CONFIG.Disk[4][i] = {}
-    SCP_235_CONFIG.Disk[4][i].StopSoundDisk = StopSoundDisk_4 + 7
+    SCP_235_CONFIG.Disk[4][i].StopSoundDisk = StopSoundDisk_4 + (10* i)
     SCP_235_CONFIG.Disk[4][i].ResumeSoundDisk = ResumeSoundDisk_4
 end
 
