@@ -51,9 +51,14 @@ if (SERVER) then
             Entity:RemoveCallback( "PhysicsCollide", Entity.SCP235_CallBackID )
             Entity.SCP235_CallBackID = nil
         end
-        if (Entity:IsPlayer() and Entity.SCP235_PreviousType) then
+        if (Entity:IsPlayer()) then
             Entity:Freeze(false)
-            Entity:SetMoveType(Entity.SCP235_PreviousType)
+            if Entity.SCP235_PreviousType then
+                Entity:SetMoveType(Entity.SCP235_PreviousType)
+            end
+        end
+        if Entity:IsNPC() then
+            SCP_235.UnFreezeNPC(Entity)
         end
         local EntPhys = Entity:GetPhysicsObject()
         if (EntPhys:IsValid() and Entity.SCP235_PreviousVelocity) then
@@ -77,9 +82,8 @@ if (SERVER) then
         -- ? That's why i use the PlayerUse hook, anw.
         -- TODO : Faire fonctionner sur les npc
         -- Collision for Players AND prop_physics
-        if Entity:GetClass() == "prop_physics" or Entity:IsPlayer() then
+        if Entity:GetClass() == "prop_physics" or Entity:IsPlayer() or Entity:IsNPC() then
             Entity.SCP235_CallBackID = Entity:AddCallback( "PhysicsCollide", function(ent, data) 
-                PrintTable(data)
                 SCP_235.CollideEvent(ent, data.HitEntity)
             end)
         elseif Entity:GetClass() != "record_player" then -- Collision for others, like regular entities.
@@ -95,9 +99,13 @@ if (SERVER) then
         end
         if (Entity:IsPlayer()) then
             Entity.SCP235_PreviousType = Entity:GetMoveType()
-            Entity:Freeze(true)
             Entity:SetMoveType(MOVETYPE_NONE)
+            Entity:Freeze(true)
         end
+        if Entity:IsNPC() then
+            SCP_235.FreezeNPC(Entity)
+        end
+
         timer.Create("SCP_235.FreezeEffect_"..Entity:EntIndex(), FreezeDuration, 1, function()
             if (IsValid(Entity) and IsValid(RecordPlayer)) then
                 SCP_235.SetEntityUnFreeze(Entity, RecordPlayer)
@@ -112,11 +120,14 @@ if (SERVER) then
     */
     function SCP_235.StopTimeEntity(RecordPlayer, Range, FreezeDuration)
         local EntsFound = ents.FindInSphere( RecordPlayer:GetPos(), Range )
+        PrintTable(EntsFound)
         for key, value in pairs(EntsFound) do
-            if (!value:IsFlagSet( FL_FROZEN ) or !value.SCP235_IsFreeze) then
-                SCP_235.SetEntityFreeze(value, FreezeDuration, RecordPlayer)
-                if (value:IsPlayer()) then
-                    SCP_235.FreezeEffectPlayer(value, FreezeDuration)
+            if value:EntIndex() != 1 then
+                if (!value:IsFlagSet( FL_FROZEN ) or !value.SCP235_IsFreeze) then
+                    SCP_235.SetEntityFreeze(value, FreezeDuration, RecordPlayer)
+                    if (value:IsPlayer()) then
+                        SCP_235.FreezeEffectPlayer(value, FreezeDuration)
+                    end
                 end
             end
         end
@@ -128,10 +139,37 @@ if (SERVER) then
     */
     function SCP_235.CollideEvent(EntityTouch, EntityHit)
         if !EntityHit.SCP235_IsFreeze and !EntityHit:IsWorld() and EntityTouch.SCP235_IsFreeze then
-            print(EntityTouch, "m'a touché :",EntityHit)
             timer.Adjust( "SCP_235.FreezeEffect_"..EntityTouch:EntIndex(), 0, 1, nil )
             if (EntityTouch:IsPlayer()) then
                 SCP_235.UnFreezeEffectPlayer(EntityTouch)
+            end
+        end
+    end
+
+    function SCP_235.FreezeNPC(NPCTarget)
+        NPCTarget:SetMoveYawLocked( true )
+        NPCTarget.SCP235_PreviousType = NPCTarget:GetMoveType()
+        NPCTarget:SetMoveType(MOVETYPE_NONE)
+        local AllEnts = ents.GetAll()
+        NPCTarget.SCP_235_PreviousRelation = {}
+        for i, value in pairs(AllEnts) do
+            NPCTarget.SCP_235_PreviousRelation[value:EntIndex()] = NPCTarget:Disposition( value )
+            NPCTarget:AddEntityRelationship( value, D_NU )
+        end
+    end
+
+    function SCP_235.UnFreezeNPC(NPCTarget)
+        NPCTarget:SetMoveYawLocked( false )
+        if NPCTarget.SCP235_PreviousType then
+            NPCTarget:SetMoveType(NPCTarget.SCP235_PreviousType)
+        end
+        if NPCTarget.SCP_235_PreviousRelation then
+            for key, value in pairs(NPCTarget.SCP_235_PreviousRelation) do
+                local EntFound = Entity( key )
+                print(EntFound)
+                if IsValid(EntFound) then
+                    NPCTarget:AddEntityRelationship( EntFound, value )
+                end
             end
         end
     end
