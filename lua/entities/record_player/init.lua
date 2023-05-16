@@ -57,7 +57,6 @@ function ENT:RebuildPhysics( )
 	self:SetMoveType(MOVETYPE_VPHYSICS)
 	self:SetSolid( SOLID_VPHYSICS ) 
 	self:SetUseType(SIMPLE_USE)
-	self:SetCustomCollisionCheck( true )
 	self:PhysWake()
 end
 
@@ -154,5 +153,3 @@ function ENT:StopEveryTimerCreated()
 		end
 	end
 end
-
---TODO : Faire des events qui font que si un joueur freeze est touché ou autre, alors ça le defreeze ?

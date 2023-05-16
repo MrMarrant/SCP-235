@@ -14,25 +14,7 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-    -- TODO: Pas de collision avec les entités quand elles sont freezes => Surtout qu'il est pas trigger server side, je comprend r
-
-    -- Remove freeze effect to entity or player when something touch them that is not freeze.
-    hook.Add( "ShouldCollide", "ShouldCollide.UnfreezeEntitiesFreeze", function( ent1, ent2 )
-        print(ent1, ent2)
-        if (ent1:GetClass() != "record_player" and
-        ent2:GetClass() != "record_player" and
-        (ent1.SCP235_IsFreeze and !ent2.SCP235_IsFreeze) or 
-        (!ent1.SCP235_IsFreeze and ent2.SCP235_IsFreeze)) then
-            local EntityFreeze = ent1.SCP235_IsFreeze and ent1 or ent2
-            timer.Adjust( "SCP_235.FreezeEffect_"..EntityFreeze:EntIndex(), 0, 1, nil )
-            if (EntityFreeze:IsPlayer()) then
-                SCP_235.UnFreezeEffectPlayer(EntityFreeze)
-            end
-        end
-    end )
-
 if (SERVER) then
-
     /*
     * Send a net message to client to display the freeze effect.
     * @Player Ply The player to display the freeze effect.
@@ -61,9 +43,15 @@ if (SERVER) then
     function SCP_235.SetEntityUnFreeze(Entity, RecordPlayer)
         table.RemoveByValue( RecordPlayer.EntitiesFreeze, Entity )
         if (!Entity:IsValid()) then return end
-        Entity.SCP235_IsFreeze = nil
-        Entity:SetCustomCollisionCheck( false )
-        if (Entity:IsPlayer()) then
+        if Entity.SCP235_OldTouch then 
+            Entity.Touch = Entity.SCP235_OldTouch
+            Entity.SCP235_OldTouch = nil
+        end
+        if Entity.SCP235_CallBackID then
+            Entity:RemoveCallback( "PhysicsCollide", Entity.SCP235_CallBackID )
+            Entity.SCP235_CallBackID = nil
+        end
+        if (Entity:IsPlayer() and Entity.SCP235_PreviousType) then
             Entity:Freeze(false)
             Entity:SetMoveType(Entity.SCP235_PreviousType)
         end
@@ -72,6 +60,7 @@ if (SERVER) then
             EntPhys:EnableMotion( true )
             EntPhys:SetVelocity(Entity.SCP235_PreviousVelocity)
         end
+        Entity.SCP235_IsFreeze = nil
     end
 
     /*
@@ -84,13 +73,28 @@ if (SERVER) then
         table.insert(RecordPlayer.EntitiesFreeze, Entity)
         local EntPhys = Entity:GetPhysicsObject()
         Entity.SCP235_IsFreeze = true
-        Entity.SCP235_PreviousType = Entity:GetMoveType()
-        Entity:SetCustomCollisionCheck( true )
+        -- ? Collision between players doesn't work for somes reasons .. ?
+        -- ? That's why i use the PlayerUse hook, anw.
+        -- TODO : Faire fonctionner sur les npc
+        -- Collision for Players AND prop_physics
+        if Entity:GetClass() == "prop_physics" or Entity:IsPlayer() then
+            Entity.SCP235_CallBackID = Entity:AddCallback( "PhysicsCollide", function(ent, data) 
+                PrintTable(data)
+                SCP_235.CollideEvent(ent, data.HitEntity)
+            end)
+        elseif Entity:GetClass() != "record_player" then -- Collision for others, like regular entities.
+            Entity.SCP235_OldTouch = Entity.Touch
+            function Entity:Touch(EntityHit)
+                SCP_235.CollideEvent(Entity, EntityHit)
+            end
+        end
+        
         if IsValid(EntPhys) then
             Entity.SCP235_PreviousVelocity = EntPhys:GetVelocity()
             EntPhys:EnableMotion( false )
         end
         if (Entity:IsPlayer()) then
+            Entity.SCP235_PreviousType = Entity:GetMoveType()
             Entity:Freeze(true)
             Entity:SetMoveType(MOVETYPE_NONE)
         end
@@ -118,19 +122,38 @@ if (SERVER) then
         end
     end
 
+    /* Custom Touch Event set when entities are freezes.
+    * @Entity Entity The entity who was collide
+    * @Entity EntityHit The entity that hit
+    */
+    function SCP_235.CollideEvent(EntityTouch, EntityHit)
+        if !EntityHit.SCP235_IsFreeze and !EntityHit:IsWorld() and EntityTouch.SCP235_IsFreeze then
+            print(EntityTouch, "m'a touché :",EntityHit)
+            timer.Adjust( "SCP_235.FreezeEffect_"..EntityTouch:EntIndex(), 0, 1, nil )
+            if (EntityTouch:IsPlayer()) then
+                SCP_235.UnFreezeEffectPlayer(EntityTouch)
+            end
+        end
+    end
+
     -- Players freeze can't hear others players and can't be heard by others.
     hook.Add( "PlayerCanHearPlayersVoice", "PlayerCanHearPlayersVoice.SCP235_TimeIsStop", function( Listener, Talker )
         if Listener.SCP235_IsFreeze or Talker.SCP235_IsFreeze then return false end
     end )
 
     -- Remove freeze effect to entity or player when something hit them.
-    hook.Add( "EntityTakeDamage", "EntityTakeDamage.UnfreezeEntitiesFreeze", function( target, dmginfo )
+    hook.Add( "EntityTakeDamage", "EntityTakeDamage.SCP_235_UnfreezeEntitiesFreeze", function( target, dmginfo )
         if (target.SCP235_IsFreeze and target:GetClass() != "record_player") then
             timer.Adjust( "SCP_235.FreezeEffect_"..target:EntIndex(), 0, 1, nil )
             if (target:IsPlayer()) then
                 SCP_235.UnFreezeEffectPlayer(target)
             end
         end
+    end )
+
+    -- If a player do a use method on a freeze object, i will do it like with collision.
+    hook.Add( "PlayerUse", "PlayerUse.SCP_235_UnfreezeEntitiesFreeze", function( ply, ent )
+        SCP_235.CollideEvent(ent, ply)
     end )
 end
 
