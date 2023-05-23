@@ -93,7 +93,7 @@ if (SERVER) then
         -- ? Collision between players doesn't work for somes reasons .. ?
         -- ? That's why i use the PlayerUse hook, anw.
         -- Collision for Players AND prop_physics
-        if Entity:GetClass() == "prop_physics" or Entity:IsPlayer() or Entity:IsNPC() then
+        if Entity:GetClass() == "prop_physics" or Entity:GetClass() == "prop_ragdoll" or Entity:IsPlayer() or Entity:IsNPC() then
             Entity.SCP235_CallBackID = Entity:AddCallback( "PhysicsCollide", function(ent, data) 
                 SCP_235.CollideEvent(ent, data.HitEntity)
             end)
@@ -121,7 +121,7 @@ if (SERVER) then
     function SCP_235.StopTimeEntity(RecordPlayer, Range, FreezeDuration)
         local EntsFound = ents.FindInSphere( RecordPlayer:GetPos(), Range )
         for key, value in pairs(EntsFound) do
-            if value:EntIndex() != 1 then
+            if value:EntIndex() != 1 then -- TODO : Retirer ça mdr
                 if (!value:IsFlagSet( FL_FROZEN ) or !value.SCP235_IsFreeze) then
                     SCP_235.SetEntityFreeze(value, FreezeDuration, RecordPlayer)
                     if (value:IsPlayer()) then
@@ -144,57 +144,88 @@ if (SERVER) then
             end
         end
     end
-    -- TODO : Prend en compte les sous-classe genre citizen avec medic
-    -- TODO : Trouver une solution pour appliquer correctement la position/l'angle de l'arme sur les NPC.
+
     function SCP_235.FreezeNPC(NPCTarget)
         local RagNPC = ents.Create( "prop_ragdoll" )
         if not RagNPC:IsValid() then return end
         local NPCWeapon = NPCTarget:GetActiveWeapon()
         local NPCPos = NPCTarget:GetPos()
+        local NPCClass = NPCTarget:GetClass()
+        local NPCModel = NPCTarget:GetModel()
         NPCTarget:SetLagCompensated( true ) --? To avoid small frame shifts during freeze.
 
+        -- TODO : Trouver une solution pour appliquer correctement la position/l'angle de l'arme sur les NPC.
         --? Set weapon prop pos
         if IsValid(NPCWeapon) then
             RagNPC.SCP235_NPCWeapon = NPCWeapon:GetClass()
-            local RagWeapon = ents.Create( "prop_physics" )
-            local attachmentRHId = NPCTarget:LookupAttachment("anim_attachment_RH") 
-            local wpnAttachment = NPCTarget:GetAttachment(attachmentRHId)
-            local wpnEtyAbsPos = wpnAttachment["Pos"]
-            local wpnhEtyAbsAng = Angle(wpnAttachment["Ang"])
-            RagWeapon:SetModel(NPCWeapon:GetModel())
-            RagWeapon:SetAngles(wpnhEtyAbsAng)
-            RagWeapon:SetPos(wpnEtyAbsPos)
-            RagWeapon:SetMoveType(MOVETYPE_NONE)
-            local PhysWeapon = RagWeapon:GetPhysicsObject()
-            if IsValid(PhysWeapon) then
-                PhysWeapon:EnableMotion( false )
-            end
-            RagNPC.SCP235_NPCRagWeapon = RagWeapon
+            -- local attachmentRHId = NPCTarget:LookupAttachment("anim_attachment_RH")
+            -- local wpnAttachment = NPCTarget:GetAttachment(attachmentRHId)
+            -- local wpnEtyAbsPos = wpnAttachment["Pos"]
+            -- local wpnhEtyAbsAng = Angle(wpnAttachment["Ang"])
+            -- local RagWeapon = ents.Create( "prop_physics" )
+            -- RagWeapon:SetModel(NPCWeapon:GetModel())
+            -- RagWeapon:SetAngles(wpnhEtyAbsAng)
+            -- RagWeapon:SetPos(wpnEtyAbsPos)
+            -- RagWeapon:SetMoveType(MOVETYPE_NONE)
+            -- local PhysWeapon = RagWeapon:GetPhysicsObject()
+            -- if IsValid(PhysWeapon) then
+            --     PhysWeapon:EnableMotion( false )
+            -- end
+            -- RagNPC.SCP235_NPCRagWeapon = RagWeapon
         end
 
         --? Set every params to the ragdoll.
-        RagNPC:SetModel( NPCTarget:GetModel() )
-        RagNPC:SetAngles(NPCTarget:GetAngles())
+        RagNPC:SetModel( NPCModel or "" ) -- Somes NPC don't have models
+        RagNPC:SetAngles(NPCTarget:GetAngles()) --! Models without physics are not affect by angles appartly
         RagNPC:SetPos(NPCPos)
+        -- Skin
+        RagNPC:SetSkin(NPCTarget:GetSkin())
+        RagNPC:Spawn()
+
+        --! Don't work on models thats don't have physics.
+        --? Set Scale Model Ragdoll, in somes cases, it doesn't work properly, cause somes models are shit.
+        local ScaleMode = NPCTarget:GetModelScale()
+        RagNPC:SetModelScale(ScaleMode)
+        for i = 0, NPCTarget:GetFlexNum() - 1 do
+            RagNPC:SetFlexWeight( i, NPCTarget:GetFlexWeight(i) )
+        end
+        -- BodyGroup
+        if NPCTarget:GetNumBodyGroups() then
+            RagNPC.SCP235_NPCBodyGroup = {}
+            for i = 0, NPCTarget:GetNumBodyGroups() - 1 do
+                local BodyGroup = NPCTarget:GetBodygroup(i)
+                RagNPC:SetBodygroup(i, BodyGroup)
+                RagNPC.SCP235_NPCBodyGroup[i] = BodyGroup
+            end
+        end
+        for i = 0, NPCTarget:GetBoneCount() do
+            RagNPC:ManipulateBoneScale(i, NPCTarget:GetManipulateBoneScale(i))
+            RagNPC:ManipulateBoneAngles(i, NPCTarget:GetManipulateBoneAngles(i))
+            RagNPC:ManipulateBonePosition(i, NPCTarget:GetManipulateBonePosition(i))
+        end
+
         RagNPC.SCP235_NPCPos = NPCPos
         RagNPC.SCP235_NPCAngle = NPCTarget:GetAngles()
-        RagNPC.SCP235_NPCClass = NPCTarget:GetClass()
+        RagNPC.SCP235_NPCClass = NPCClass
         RagNPC.SCP235_NPCSkin = NPCTarget:GetSkin()
         RagNPC.SCP235_NPCHealth = NPCTarget:Health()
         RagNPC.SCP235_WasNPC = NPCTarget:IsNPC()
         RagNPC.SCP235_WasNextBot = NPCTarget:IsNextBot()
+        RagNPC.SCP235_IsFreeze = true
+        if (NPCClass == "npc_citizen") then
+            RagNPC.SCP235_CityType = string.sub(NPCModel,21,21)
+            if string.sub(NPCModel,22,22) == "m" then RagNPC.SCP235_CitMed = 1 end
+        end
         RagNPC:SetMaterial(NPCTarget:GetMaterial())
-        RagNPC:Spawn()
-        RagNPC:Activate()
 
         --? Set Every Bone of the ragdoll like The npc.
-        local Bones = RagNPC:GetPhysicsObjectCount() - 1
-        for i = 0, Bones do
+        --! No bones for models without physics
+        local Bones = RagNPC:GetPhysicsObjectCount()
+        for i = 0, Bones - 1 do
             local phys = RagNPC:GetPhysicsObjectNum(i)
 			local b = RagNPC:TranslatePhysBoneToBone(i)
 			local pos,ang = NPCTarget:GetBonePosition(b)
             phys:EnableMotion(false)
-			phys:Wake()
 			phys:SetPos(pos)
 			phys:SetAngles(ang)
             phys:Wake()
@@ -202,20 +233,31 @@ if (SERVER) then
 
         NPCTarget:Remove()
         RagNPC:SetMoveType(MOVETYPE_NONE) --? Ragdoll will not move with this, even in air.
-
         return RagNPC
     end
 
     function SCP_235.UnFreezeNPC(RagNPC)
         local NPCTarget = ents.Create(RagNPC.SCP235_NPCClass)
-        NPCTarget:SetModel(RagNPC:GetModel())
+        NPCTarget:SetModel(RagNPC:GetModel() or "") -- Somes NPC don't have models
         NPCTarget:SetPos(RagNPC.SCP235_NPCPos)
         NPCTarget:SetSkin(RagNPC.SCP235_NPCSkin)
 		NPCTarget:SetAngles(RagNPC.SCP235_NPCAngle)
         if RagNPC.SCP235_NPCWeapon then NPCTarget:SetKeyValue("additionalequipment",RagNPC.SCP235_NPCWeapon) end
+        if (RagNPC.SCP235_CityType) then
+            NPCTarget:SetKeyValue("citizentype", RagNPC.SCP235_CityType)
+            if RagNPC.SCP235_CityType == "3" && RagNPC.SCP235_CitMed == 1 then
+                NPCTarget:SetKeyValue("spawnflags","131072")
+            end
+        end
         NPCTarget:Spawn()
-		NPCTarget:Activate()
+        NPCTarget:Activate()
+
         if (RagNPC.SCP235_NPCRagWeapon) then RagNPC.SCP235_NPCRagWeapon:Remove() end
+        if (RagNPC.SCP235_NPCBodyGroup) then
+            for key, value in pairs(RagNPC.SCP235_NPCBodyGroup) do
+                NPCTarget:SetBodygroup(key, value)
+            end
+        end
         NPCTarget:SetHealth(RagNPC.SCP235_NPCHealth)
         RagNPC:Remove()
     end
