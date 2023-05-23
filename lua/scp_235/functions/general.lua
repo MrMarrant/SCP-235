@@ -43,6 +43,7 @@ if (SERVER) then
     function SCP_235.SetEntityUnFreeze(Entity, RecordPlayer)
         table.RemoveByValue( RecordPlayer.EntitiesFreeze, Entity )
         if (!Entity:IsValid()) then return end
+
         if Entity.SCP235_OldTouch then 
             Entity.Touch = Entity.SCP235_OldTouch
             Entity.SCP235_OldTouch = nil
@@ -51,9 +52,14 @@ if (SERVER) then
             Entity:RemoveCallback( "PhysicsCollide", Entity.SCP235_CallBackID )
             Entity.SCP235_CallBackID = nil
         end
-        if (Entity:IsPlayer() and Entity.SCP235_PreviousType) then
+        if (Entity:IsPlayer()) then
             Entity:Freeze(false)
-            Entity:SetMoveType(Entity.SCP235_PreviousType)
+            if Entity.SCP235_PreviousType then
+                Entity:SetMoveType(Entity.SCP235_PreviousType)
+            end
+        end
+        if Entity:GetClass() == "prop_ragdoll" and (Entity.SCP235_WasNPC or Entity.SCP235_WasNextBot) then
+            SCP_235.UnFreezeNPC(Entity)
         end
         local EntPhys = Entity:GetPhysicsObject()
         if (EntPhys:IsValid() and Entity.SCP235_PreviousVelocity) then
@@ -70,16 +76,25 @@ if (SERVER) then
     * @Entity RecordPlayer The RecordPlayer ent who call the method.
     */
     function SCP_235.SetEntityFreeze(Entity, FreezeDuration, RecordPlayer)
-        table.insert(RecordPlayer.EntitiesFreeze, Entity)
         local EntPhys = Entity:GetPhysicsObject()
         Entity.SCP235_IsFreeze = true
+        if IsValid(EntPhys) then
+            Entity.SCP235_PreviousVelocity = EntPhys:GetVelocity()
+            EntPhys:EnableMotion( false )
+        end
+        if (Entity:IsPlayer()) then
+            Entity.SCP235_PreviousType = Entity:GetMoveType()
+            Entity:SetMoveType(MOVETYPE_NONE)
+            Entity:Freeze(true)
+        end
+        if (Entity:IsNPC() or Entity:IsNextBot()) and Entity:Health() > 0 then
+            Entity = SCP_235.FreezeNPC(Entity)
+        end
         -- ? Collision between players doesn't work for somes reasons .. ?
         -- ? That's why i use the PlayerUse hook, anw.
-        -- TODO : Faire fonctionner sur les npc
         -- Collision for Players AND prop_physics
-        if Entity:GetClass() == "prop_physics" or Entity:IsPlayer() then
+        if Entity:GetClass() == "prop_physics" or Entity:GetClass() == "prop_ragdoll" or Entity:IsPlayer() or Entity:IsNPC() then
             Entity.SCP235_CallBackID = Entity:AddCallback( "PhysicsCollide", function(ent, data) 
-                PrintTable(data)
                 SCP_235.CollideEvent(ent, data.HitEntity)
             end)
         elseif Entity:GetClass() != "record_player" then -- Collision for others, like regular entities.
@@ -88,16 +103,9 @@ if (SERVER) then
                 SCP_235.CollideEvent(Entity, EntityHit)
             end
         end
-        
-        if IsValid(EntPhys) then
-            Entity.SCP235_PreviousVelocity = EntPhys:GetVelocity()
-            EntPhys:EnableMotion( false )
-        end
-        if (Entity:IsPlayer()) then
-            Entity.SCP235_PreviousType = Entity:GetMoveType()
-            Entity:Freeze(true)
-            Entity:SetMoveType(MOVETYPE_NONE)
-        end
+
+        table.insert(RecordPlayer.EntitiesFreeze, Entity)
+
         timer.Create("SCP_235.FreezeEffect_"..Entity:EntIndex(), FreezeDuration, 1, function()
             if (IsValid(Entity) and IsValid(RecordPlayer)) then
                 SCP_235.SetEntityUnFreeze(Entity, RecordPlayer)
@@ -113,10 +121,12 @@ if (SERVER) then
     function SCP_235.StopTimeEntity(RecordPlayer, Range, FreezeDuration)
         local EntsFound = ents.FindInSphere( RecordPlayer:GetPos(), Range )
         for key, value in pairs(EntsFound) do
-            if (!value:IsFlagSet( FL_FROZEN ) or !value.SCP235_IsFreeze) then
-                SCP_235.SetEntityFreeze(value, FreezeDuration, RecordPlayer)
-                if (value:IsPlayer()) then
-                    SCP_235.FreezeEffectPlayer(value, FreezeDuration)
+            if value:EntIndex() != 1 then -- TODO : Retirer ça mdr
+                if (!value:IsFlagSet( FL_FROZEN ) or !value.SCP235_IsFreeze) then
+                    SCP_235.SetEntityFreeze(value, FreezeDuration, RecordPlayer)
+                    if (value:IsPlayer()) then
+                        SCP_235.FreezeEffectPlayer(value, FreezeDuration)
+                    end
                 end
             end
         end
@@ -128,12 +138,128 @@ if (SERVER) then
     */
     function SCP_235.CollideEvent(EntityTouch, EntityHit)
         if !EntityHit.SCP235_IsFreeze and !EntityHit:IsWorld() and EntityTouch.SCP235_IsFreeze then
-            print(EntityTouch, "m'a touché :",EntityHit)
             timer.Adjust( "SCP_235.FreezeEffect_"..EntityTouch:EntIndex(), 0, 1, nil )
             if (EntityTouch:IsPlayer()) then
                 SCP_235.UnFreezeEffectPlayer(EntityTouch)
             end
         end
+    end
+
+    function SCP_235.FreezeNPC(NPCTarget)
+        local RagNPC = ents.Create( "prop_ragdoll" )
+        if not RagNPC:IsValid() then return end
+        local NPCWeapon = NPCTarget:GetActiveWeapon()
+        local NPCPos = NPCTarget:GetPos()
+        local NPCClass = NPCTarget:GetClass()
+        local NPCModel = NPCTarget:GetModel()
+        NPCTarget:SetLagCompensated( true ) --? To avoid small frame shifts during freeze.
+
+        -- TODO : Trouver une solution pour appliquer correctement la position/l'angle de l'arme sur les NPC.
+        --? Set weapon prop pos
+        if IsValid(NPCWeapon) then
+            RagNPC.SCP235_NPCWeapon = NPCWeapon:GetClass()
+            -- local attachmentRHId = NPCTarget:LookupAttachment("anim_attachment_RH")
+            -- local wpnAttachment = NPCTarget:GetAttachment(attachmentRHId)
+            -- local wpnEtyAbsPos = wpnAttachment["Pos"]
+            -- local wpnhEtyAbsAng = Angle(wpnAttachment["Ang"])
+            -- local RagWeapon = ents.Create( "prop_physics" )
+            -- RagWeapon:SetModel(NPCWeapon:GetModel())
+            -- RagWeapon:SetAngles(wpnhEtyAbsAng)
+            -- RagWeapon:SetPos(wpnEtyAbsPos)
+            -- RagWeapon:SetMoveType(MOVETYPE_NONE)
+            -- local PhysWeapon = RagWeapon:GetPhysicsObject()
+            -- if IsValid(PhysWeapon) then
+            --     PhysWeapon:EnableMotion( false )
+            -- end
+            -- RagNPC.SCP235_NPCRagWeapon = RagWeapon
+        end
+
+        --? Set every params to the ragdoll.
+        RagNPC:SetModel( NPCModel or "" ) -- Somes NPC don't have models
+        RagNPC:SetAngles(NPCTarget:GetAngles()) --! Models without physics are not affect by angles appartly
+        RagNPC:SetPos(NPCPos)
+        -- Skin
+        RagNPC:SetSkin(NPCTarget:GetSkin())
+        RagNPC:Spawn()
+
+        --! Don't work on models thats don't have physics.
+        --? Set Scale Model Ragdoll, in somes cases, it doesn't work properly, cause somes models are shit.
+        local ScaleMode = NPCTarget:GetModelScale()
+        RagNPC:SetModelScale(ScaleMode)
+        for i = 0, NPCTarget:GetFlexNum() - 1 do
+            RagNPC:SetFlexWeight( i, NPCTarget:GetFlexWeight(i) )
+        end
+        -- BodyGroup
+        if NPCTarget:GetNumBodyGroups() then
+            RagNPC.SCP235_NPCBodyGroup = {}
+            for i = 0, NPCTarget:GetNumBodyGroups() - 1 do
+                local BodyGroup = NPCTarget:GetBodygroup(i)
+                RagNPC:SetBodygroup(i, BodyGroup)
+                RagNPC.SCP235_NPCBodyGroup[i] = BodyGroup
+            end
+        end
+        for i = 0, NPCTarget:GetBoneCount() do
+            RagNPC:ManipulateBoneScale(i, NPCTarget:GetManipulateBoneScale(i))
+            RagNPC:ManipulateBoneAngles(i, NPCTarget:GetManipulateBoneAngles(i))
+            RagNPC:ManipulateBonePosition(i, NPCTarget:GetManipulateBonePosition(i))
+        end
+
+        RagNPC.SCP235_NPCPos = NPCPos
+        RagNPC.SCP235_NPCAngle = NPCTarget:GetAngles()
+        RagNPC.SCP235_NPCClass = NPCClass
+        RagNPC.SCP235_NPCSkin = NPCTarget:GetSkin()
+        RagNPC.SCP235_NPCHealth = NPCTarget:Health()
+        RagNPC.SCP235_WasNPC = NPCTarget:IsNPC()
+        RagNPC.SCP235_WasNextBot = NPCTarget:IsNextBot()
+        RagNPC.SCP235_IsFreeze = true
+        if (NPCClass == "npc_citizen") then
+            RagNPC.SCP235_CityType = string.sub(NPCModel,21,21)
+            if string.sub(NPCModel,22,22) == "m" then RagNPC.SCP235_CitMed = 1 end
+        end
+        RagNPC:SetMaterial(NPCTarget:GetMaterial())
+
+        --? Set Every Bone of the ragdoll like The npc.
+        --! No bones for models without physics
+        local Bones = RagNPC:GetPhysicsObjectCount()
+        for i = 0, Bones - 1 do
+            local phys = RagNPC:GetPhysicsObjectNum(i)
+			local b = RagNPC:TranslatePhysBoneToBone(i)
+			local pos,ang = NPCTarget:GetBonePosition(b)
+            phys:EnableMotion(false)
+			phys:SetPos(pos)
+			phys:SetAngles(ang)
+            phys:Wake()
+        end
+
+        NPCTarget:Remove()
+        RagNPC:SetMoveType(MOVETYPE_NONE) --? Ragdoll will not move with this, even in air.
+        return RagNPC
+    end
+
+    function SCP_235.UnFreezeNPC(RagNPC)
+        local NPCTarget = ents.Create(RagNPC.SCP235_NPCClass)
+        NPCTarget:SetModel(RagNPC:GetModel() or "") -- Somes NPC don't have models
+        NPCTarget:SetPos(RagNPC.SCP235_NPCPos)
+        NPCTarget:SetSkin(RagNPC.SCP235_NPCSkin)
+		NPCTarget:SetAngles(RagNPC.SCP235_NPCAngle)
+        if RagNPC.SCP235_NPCWeapon then NPCTarget:SetKeyValue("additionalequipment",RagNPC.SCP235_NPCWeapon) end
+        if (RagNPC.SCP235_CityType) then
+            NPCTarget:SetKeyValue("citizentype", RagNPC.SCP235_CityType)
+            if RagNPC.SCP235_CityType == "3" && RagNPC.SCP235_CitMed == 1 then
+                NPCTarget:SetKeyValue("spawnflags","131072")
+            end
+        end
+        NPCTarget:Spawn()
+        NPCTarget:Activate()
+
+        if (RagNPC.SCP235_NPCRagWeapon) then RagNPC.SCP235_NPCRagWeapon:Remove() end
+        if (RagNPC.SCP235_NPCBodyGroup) then
+            for key, value in pairs(RagNPC.SCP235_NPCBodyGroup) do
+                NPCTarget:SetBodygroup(key, value)
+            end
+        end
+        NPCTarget:SetHealth(RagNPC.SCP235_NPCHealth)
+        RagNPC:Remove()
     end
 
     -- Players freeze can't hear others players and can't be heard by others.
