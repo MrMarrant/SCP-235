@@ -40,10 +40,8 @@ if (SERVER) then
     * @Entity Entity The ent to unfreeze.
     * @Entity RecordPlayer The RecordPlayer ent who call the method.
     */
-    function SCP_235.SetEntityUnFreeze(Entity, RecordPlayer)
-        table.RemoveByValue( RecordPlayer.EntitiesFreeze, Entity )
+    function SCP_235.SetEntityUnFreeze(Entity)
         if (!Entity:IsValid()) then return end
-
         if Entity.SCP235_OldTouch then 
             Entity.Touch = Entity.SCP235_OldTouch
             Entity.SCP235_OldTouch = nil
@@ -54,6 +52,7 @@ if (SERVER) then
         end
         if (Entity:IsPlayer()) then
             Entity:Freeze(false)
+            SCP_235.UnFreezeEffectPlayer(Entity)
             if Entity.SCP235_PreviousType then
                 Entity:SetMoveType(Entity.SCP235_PreviousType)
             end
@@ -90,6 +89,9 @@ if (SERVER) then
         if (Entity:IsNPC() or Entity:IsNextBot()) and Entity:Health() > 0 then
             Entity = SCP_235.FreezeNPC(Entity)
         end
+
+        table.insert(RecordPlayer.EntitiesFreeze, Entity)
+
         -- ? Collision between players doesn't work for somes reasons .. ?
         -- ? That's why i use the PlayerUse hook, anw.
         -- Collision for Players AND prop_physics
@@ -104,11 +106,10 @@ if (SERVER) then
             end
         end
 
-        table.insert(RecordPlayer.EntitiesFreeze, Entity)
-
         timer.Create("SCP_235.FreezeEffect_"..Entity:EntIndex(), FreezeDuration, 1, function()
-            if (IsValid(Entity) and IsValid(RecordPlayer)) then
-                SCP_235.SetEntityUnFreeze(Entity, RecordPlayer)
+            if (IsValid(Entity) and IsValid(RecordPlayer)) then table.RemoveByValue( RecordPlayer.EntitiesFreeze, Entity ) end
+            if (IsValid(Entity)) then
+                SCP_235.SetEntityUnFreeze(Entity)
             end
         end)
     end
@@ -121,12 +122,10 @@ if (SERVER) then
     function SCP_235.StopTimeEntity(RecordPlayer, Range, FreezeDuration)
         local EntsFound = ents.FindInSphere( RecordPlayer:GetPos(), Range )
         for key, value in pairs(EntsFound) do
-            if value:EntIndex() != 1 then -- TODO : Retirer ça mdr
-                if (!value:IsFlagSet( FL_FROZEN ) or !value.SCP235_IsFreeze) then
-                    SCP_235.SetEntityFreeze(value, FreezeDuration, RecordPlayer)
-                    if (value:IsPlayer()) then
-                        SCP_235.FreezeEffectPlayer(value, FreezeDuration)
-                    end
+            if (!value:IsFlagSet( FL_FROZEN ) and !value.SCP235_IsFreeze) then
+                SCP_235.SetEntityFreeze(value, FreezeDuration, RecordPlayer)
+                if (value:IsPlayer()) then
+                    SCP_235.FreezeEffectPlayer(value, FreezeDuration)
                 end
             end
         end
@@ -137,14 +136,14 @@ if (SERVER) then
     * @Entity EntityHit The entity that hit
     */
     function SCP_235.CollideEvent(EntityTouch, EntityHit)
-        if !EntityHit.SCP235_IsFreeze and !EntityHit:IsWorld() and EntityTouch.SCP235_IsFreeze then
+        if !EntityHit.SCP235_IsFreeze and !EntityHit:IsWorld() and EntityTouch.SCP235_IsFreeze and EntityTouch:GetClass() != "record_player" then
             timer.Adjust( "SCP_235.FreezeEffect_"..EntityTouch:EntIndex(), 0, 1, nil )
-            if (EntityTouch:IsPlayer()) then
-                SCP_235.UnFreezeEffectPlayer(EntityTouch)
-            end
         end
     end
 
+    /* Method for freeze NPC, a lot of stupid rules to apply, it create an ragdoll that have the same pose than the NPC freeze.
+    * @NPC NPCTarget The NPC to freeze
+    */
     function SCP_235.FreezeNPC(NPCTarget)
         local RagNPC = ents.Create( "prop_ragdoll" )
         if not RagNPC:IsValid() then return end
@@ -182,8 +181,8 @@ if (SERVER) then
         RagNPC:SetSkin(NPCTarget:GetSkin())
         RagNPC:Spawn()
 
-        --! Don't work on models thats don't have physics.
         --? Set Scale Model Ragdoll, in somes cases, it doesn't work properly, cause somes models are shit.
+        --! Don't work on models thats don't have physics.
         local ScaleMode = NPCTarget:GetModelScale()
         RagNPC:SetModelScale(ScaleMode)
         for i = 0, NPCTarget:GetFlexNum() - 1 do
@@ -236,6 +235,9 @@ if (SERVER) then
         return RagNPC
     end
 
+    /* Method for unfreeze an NPC, recreate the NPC with the ragdoll created when he was froozen.
+    * @Ragdoll RagNPC The ragdoll create while the NPC was freeze.
+    */
     function SCP_235.UnFreezeNPC(RagNPC)
         local NPCTarget = ents.Create(RagNPC.SCP235_NPCClass)
         NPCTarget:SetModel(RagNPC:GetModel() or "") -- Somes NPC don't have models
@@ -271,9 +273,6 @@ if (SERVER) then
     hook.Add( "EntityTakeDamage", "EntityTakeDamage.SCP_235_UnfreezeEntitiesFreeze", function( target, dmginfo )
         if (target.SCP235_IsFreeze and target:GetClass() != "record_player") then
             timer.Adjust( "SCP_235.FreezeEffect_"..target:EntIndex(), 0, 1, nil )
-            if (target:IsPlayer()) then
-                SCP_235.UnFreezeEffectPlayer(target)
-            end
         end
     end )
 

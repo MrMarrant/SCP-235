@@ -110,9 +110,6 @@ function ENT:EjectDisk()
 	Disk:Activate()
 	self:ManageSound()
 	self:StopEveryTimerCreated()
-	for key, value in ipairs(self.EntitiesFreeze) do
-		SCP_235.SetEntityUnFreeze(value, self)
-	end
 	self.EntitiesFreeze = {}
 	self.TypeSoundPlayed = nil
 	timer.Simple(1, function() --? Permet d'éviter que le disque jeté soit inséré lors de la colision.
@@ -135,7 +132,7 @@ function ENT:SetStopSound()
 	for key, value in ipairs(SCP_235_CONFIG.Disk[self.TypeSoundPlayed]) do
 		timer.Create( "SCP-235-Stop-"..self.IDSCP235.."-"..self.TypeSoundPlayed.."-"..key, value.StopSoundDisk, 1, function()
 			if (!self:IsValid()) then return end
-			--? On stop les joueurs selon la durée totale de l'effet soustrait par le nombres de secondes que l'enregistrement à déjà stop.
+			--? On stop les joueurs selon la durée totale de l'effet.
 			SCP_235.StopTimeEntity(self, SCP_235_CONFIG.RangeEffect, value.ResumeSoundDisk)
 		end )
 	end
@@ -147,9 +144,10 @@ function ENT:StopEveryTimerCreated()
 			timer.Remove( "SCP-235-Stop-"..self.IDSCP235.."-"..self.TypeSoundPlayed.."-"..key )
 		end
 	end
-	for key, value in ipairs(self.EntitiesFreeze) do
-		if (value:IsPlayer()) then
-			SCP_235.UnFreezeEffectPlayer(value)
+
+	for key, value in SortedPairs(self.EntitiesFreeze) do
+		if (value:IsValid()) then
+			timer.Adjust( "SCP_235.FreezeEffect_"..value:EntIndex(), 0, 1, nil )
 		end
 	end
 end
