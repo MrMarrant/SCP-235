@@ -1,5 +1,6 @@
 SCP_235_CONFIG.SoundToPlay = "scp_235/SCP-235-"
 SCP_235_CONFIG.RangeEffect = 400
+SCP_235_CONFIG.PathImmuneEffect = "data_scp235/immune_effect.json"
 SCP_235_CONFIG.Disk = {}
 
 --? I know, this is ugly asf, but when you can't manage sound to pause and resume, you don't have many choice left.
@@ -81,8 +82,19 @@ SCP_235_CONFIG.UnFreezeEffectPlayer = "SCP_235_CONFIG.UnFreezeEffectPlayer"
 if (SERVER) then
     util.AddNetworkString( SCP_235_CONFIG.FreezeEffectPlayer )
     util.AddNetworkString( SCP_235_CONFIG.UnFreezeEffectPlayer )
+
+    if not file.Exists(SCP_235_CONFIG.PathImmuneEffect, "DATA") then
+        local SERVER_VALUES = {}
+        SERVER_VALUES.JobsImmune = {}
+        SERVER_VALUES.ClassImmune = {}
+        file.Write(SCP_235_CONFIG.PathImmuneEffect, util.TableToJSON(SERVER_VALUES, true))
+    else
+        -- TODO : Faire la méthode
+        -- SCP_235_CONFIG.ImmuneEffect = SCP_235.GetDataFromFile(SCP_235_CONFIG.PathImmuneEffect)
+    end
 end
 
+-- TODO : Faire une convar pour ouvrir le menu, check si le joueur est admin avant de l'ouvrir.
 if (CLIENT) then
     SCP_235_CONFIG.ScrW = ScrW()
     SCP_235_CONFIG.ScrH = ScrH()
