@@ -264,6 +264,21 @@ if (SERVER) then
         RagNPC:Remove()
     end
 
+    /* Open the config menu.
+    * @Player Ply The player to display the freeze effect.
+    */
+    function SCP_235.OpenMenu(ply)
+        net.Start(SCP_235_CONFIG.OpenMenuSCP235)
+        net.Send(ply)
+    end
+
+    net.Receive(SCP_235_CONFIG.CTSOpenMenuSCP235, function (len, ply )
+        if ( !IsValid( ply ) ) then return end
+        if (ply:IsSuperAdmin() or ply:IsAdmin() or game.SinglePlayer()) then
+            SCP_235.OpenMenu(ply)
+        end
+    end)
+
     -- Players freeze can't hear others players and can't be heard by others.
     hook.Add( "PlayerCanHearPlayersVoice", "PlayerCanHearPlayersVoice.SCP235_TimeIsStop", function( Listener, Talker )
         if Listener.SCP235_IsFreeze or Talker.SCP235_IsFreeze then return false end
@@ -311,6 +326,10 @@ if (CLIENT) then
         if (timer.Exists("SCP_235.BlurryEffect_"..Ply:EntIndex())) then
             timer.Remove("SCP_235.BlurryEffect_"..Ply:EntIndex())
         end
+    end)
+
+    net.Receive(SCP_235_CONFIG.OpenMenuSCP235, function(Len)
+        vgui.Create( "MenuConfigSCP235" )
     end)
 
     hook.Add( "OnScreenSizeChanged", "OnScreenSizeChanged.SCP35_ScreenSizeChanged", function( oldWidth, oldHeight )

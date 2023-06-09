@@ -1,3 +1,19 @@
+-- SCP 235, A representation of a paranormal object on a fictional series on the game Garry's Mod.
+-- Copyright (C) 2023  MrMarrant aka BIBI.
+
+-- This program is free software: you can redistribute it and/or modify
+-- it under the terms of the GNU General Public License as published by
+-- the Free Software Foundation, either version 3 of the License, or
+-- (at your option) any later version.
+
+-- This program is distributed in the hope that it will be useful,
+-- but WITHOUT ANY WARRANTY; without even the implied warranty of
+-- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-- GNU General Public License for more details.
+
+-- You should have received a copy of the GNU General Public License
+-- along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 SCP_235_CONFIG.SoundToPlay = "scp_235/SCP-235-"
 SCP_235_CONFIG.RangeEffect = 400
 SCP_235_CONFIG.PathImmuneEffect = "data_scp235/immune_effect.json"
@@ -78,10 +94,14 @@ end
 -- Network Value
 SCP_235_CONFIG.FreezeEffectPlayer = "SCP_235_CONFIG.FreezeEffectPlayer"
 SCP_235_CONFIG.UnFreezeEffectPlayer = "SCP_235_CONFIG.UnFreezeEffectPlayer"
+SCP_235_CONFIG.CTSOpenMenuSCP235 = "SCP_235_CONFIG.CTSOpenMenuSCP235"
+SCP_235_CONFIG.OpenMenuSCP235 = "SCP_235_CONFIG.OpenMenuSCP235"
 
 if (SERVER) then
     util.AddNetworkString( SCP_235_CONFIG.FreezeEffectPlayer )
     util.AddNetworkString( SCP_235_CONFIG.UnFreezeEffectPlayer )
+    util.AddNetworkString( SCP_235_CONFIG.CTSOpenMenuSCP235 )
+    util.AddNetworkString( SCP_235_CONFIG.OpenMenuSCP235 )
 
     if not file.Exists(SCP_235_CONFIG.PathImmuneEffect, "DATA") then
         local SERVER_VALUES = {}
