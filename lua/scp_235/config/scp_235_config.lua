@@ -97,6 +97,11 @@ SCP_235_CONFIG.UnFreezeEffectPlayer = "SCP_235_CONFIG.UnFreezeEffectPlayer"
 SCP_235_CONFIG.CTSOpenMenuSCP235 = "SCP_235_CONFIG.CTSOpenMenuSCP235"
 SCP_235_CONFIG.OpenMenuSCP235 = "SCP_235_CONFIG.OpenMenuSCP235"
 
+-- DIRECTORY DATA FOLDER
+if not file.Exists("data_scp235", "DATA") then
+    file.CreateDir("data_scp235")
+end
+
 if (SERVER) then
     util.AddNetworkString( SCP_235_CONFIG.FreezeEffectPlayer )
     util.AddNetworkString( SCP_235_CONFIG.UnFreezeEffectPlayer )
@@ -108,9 +113,6 @@ if (SERVER) then
         SERVER_VALUES.JobsImmune = {}
         SERVER_VALUES.ClassImmune = {}
         file.Write(SCP_235_CONFIG.PathImmuneEffect, util.TableToJSON(SERVER_VALUES, true))
-    else
-        -- TODO : Faire la méthode
-        -- SCP_235_CONFIG.ImmuneEffect = SCP_235.GetDataFromFile(SCP_235_CONFIG.PathImmuneEffect)
     end
 end
 

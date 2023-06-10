@@ -14,6 +14,16 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+/*
+* Allows to return the data of a file.
+* @string path File path.
+*/
+function SCP_235.GetDataFromFile(path)
+    local fileFind = file.Read(path) or ""
+    local dataFind = util.JSONToTable(fileFind) or {}
+    return dataFind
+end
+
 if (SERVER) then
     /*
     * Send a net message to client to display the freeze effect.
@@ -268,6 +278,7 @@ if (SERVER) then
     * @Player Ply The player to display the freeze effect.
     */
     function SCP_235.OpenMenu(ply)
+        -- TODO : Synchroniser les données serveur au client du joueur avant d'ouvrir le menu.
         net.Start(SCP_235_CONFIG.OpenMenuSCP235)
         net.Send(ply)
     end

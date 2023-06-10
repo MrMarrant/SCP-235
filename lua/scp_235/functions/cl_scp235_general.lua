@@ -16,6 +16,35 @@
 
 if SERVER then return end
 
+/*
+* @number mode The panel mode to set visibility
+* @panel body The panel body of the aegis menu.
+*/
+function SCP_235.UpdateVisibilityBody(mode, body)
+    if (type(mode) != "number" or type(body) != "Panel") then return end
+    local Childrens = body:GetChildren()
+    for key, value in pairs(Childrens) do
+        if (value.GetMode == mode) then value:SetVisible( true )
+        else value:SetVisible( false ) end
+    end
+end
+
+/*
+* @panel parent The panel parent to update size.
+*/
+function SCP_235.UpdateChildren(parent)
+    if (type(parent) != "Panel") then return end
+    local width, height = parent:GetSize()
+    local Childrens = parent:GetChildren()
+    local incrementHeight = 0
+
+    for key, value in pairs(Childrens) do
+        value:SetSize(width * 0.5, height * 0.12)
+        value:SetPos(width * 0.05, height * incrementHeight)
+        incrementHeight = math.Clamp(incrementHeight + 1/#Childrens, 0, 1)
+    end
+end
+
 local bindkey_open_menu = CreateClientConVar("bindkey_open_menu", "J", true, false, "Open Menu config SCP-235")
 
 -- Cooldown for avoid players to spam key bind.

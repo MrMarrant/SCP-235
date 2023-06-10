@@ -36,3 +36,4 @@ end
 
 SCP_235.LoadDirectory("scp_235/config/")
 SCP_235.LoadDirectory("scp_235/functions/")
+SCP_235.LoadDirectory("scp_235/menu/")
